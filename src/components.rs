@@ -9,6 +9,13 @@ pub struct Position {
 }
 
 #[derive(Component)]
+pub struct Viewshed {
+    pub visible_tiles: Vec<rltk::Point>,
+    pub range: i32,
+    pub dirty: bool
+}
+
+#[derive(Component)]
 pub struct Renderable {
     pub glyph: rltk::FontCharType,
     pub fg: RGB,
