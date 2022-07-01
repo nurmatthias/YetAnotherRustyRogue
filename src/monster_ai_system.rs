@@ -1,4 +1,6 @@
 use specs::prelude::*;
+use crate::Name;
+
 use super::{Viewshed, Position, Map, Monster};
 use rltk::{field_of_view, Point, console};
 
@@ -7,16 +9,19 @@ pub struct MonsterAI {}
 
 impl<'a> System<'a> for MonsterAI {
     type SystemData = ( 
+        ReadExpect<'a, Point>,
         ReadStorage<'a, Viewshed>,
-        ReadStorage<'a, Position>,
-        ReadStorage<'a, Monster>
+        ReadStorage<'a, Monster>,
+        ReadStorage<'a, Name>
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (viewshed, pos, monster) = data;
+        let (player_pos, viewshed, monster, name) = data;
 
-        for(_viewshed, _pos, _monster) in (&viewshed, &pos, &monster).join() {
-            console::log("Monster thinks about there own existance")
+        for(viewshed, _monster, name) in (&viewshed, &monster, &name).join() {
+            if viewshed.visible_tiles.contains(&*player_pos) {
+                console::log(&format!("{} insultes you", name.name))
+            }
         }
     }
 }
