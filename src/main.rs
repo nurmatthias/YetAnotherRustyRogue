@@ -18,6 +18,8 @@ mod melee_combat_system;
 use melee_combat_system::MeleeCombatSystem;
 mod damage_system;
 use damage_system::DamageSystem;
+mod gui;
+mod gamelog;
 
 
 
@@ -88,14 +90,17 @@ impl GameState for State {
             let idx = map.xy_idx(pos.x, pos.y);
             if map.visible_tiles[idx] { ctx.set(pos.x, pos.y, render.fg, render.bg, render.glyph) }
         }
+
+        gui::draw_ui(&self.ecs, ctx);
     }
 }
 
 fn main() -> rltk::BError {
     use rltk::RltkBuilder;
-    let context = RltkBuilder::simple80x50()
-        .with_title("Roguelike Tutorial")
+    let mut context = RltkBuilder::simple80x50()
+        .with_title("Yet another rogue")
         .build()?;
+    context.with_post_scanlines(true);
 
     let mut gs = State {
         ecs: World::new(),
@@ -164,6 +169,7 @@ fn main() -> rltk::BError {
     gs.ecs.insert(Point::new(player_x, player_y));
     gs.ecs.insert(player_entity);
     gs.ecs.insert(RunState::PreRun);
+    gs.ecs.insert(gamelog::GameLog{ entries: vec!["Welcome to Yet another rogue!".to_string()]});
 
     rltk::main_loop(context, gs)
 }
