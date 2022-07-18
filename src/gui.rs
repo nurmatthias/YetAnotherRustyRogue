@@ -1,6 +1,8 @@
 use rltk::{RGB, Rltk, Point, VirtualKeyCode};
 use specs::prelude::*;
 
+use crate::Viewshed;
+
 use super::{gamelog::GameLog, CombatStats, Player, Position, Map, Name, InBackpack};
 
 pub fn draw_ui(ecs: &World, ctx: &mut Rltk) {
@@ -126,4 +128,51 @@ pub fn show_inventory(ecs: &World, ctx: &mut Rltk, drop_menu: bool) -> (ItemMenu
             }
         }
     }
+}
+
+
+pub fn ranged_target(ecs: &World, ctx: &mut Rltk, range: i32) -> (ItemMenuResult, Option<Point>) {
+
+    let player_entity = ecs.fetch::<Entity>();
+    let player_pos = ecs.fetch::<Point>();
+    let viewshed = ecs.read_storage::<Viewshed>();
+
+    ctx.print_color(5, 0, RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK), "Select target:");
+
+    let mut available_cells = Vec::new();
+    let visible = viewshed.get(*player_entity);
+    if let Some(visible) = visible {
+        for idx in visible.visible_tiles.iter() {
+            let distance = rltk::DistanceAlg::Pythagoras.distance2d(*player_pos, *idx);
+            if distance <= range as f32 {
+                ctx.set_bg(idx.x, idx.y, RGB::named(rltk::BLUE));
+                available_cells.push(idx);
+            }
+        }
+    } else {
+        return (ItemMenuResult::Cancel, None);
+    }
+
+    // mouse handling
+    let mouse_pos = ctx.mouse_pos();
+    let mut valid_target = false;
+    for idx in available_cells.iter() {
+        if idx.x == mouse_pos.0 && idx.y == mouse_pos.1 {
+            valid_target = true;
+        }
+    }
+
+    if valid_target {
+        ctx.set_bg(mouse_pos.0, mouse_pos.1, RGB::named(rltk::CYAN));
+        if ctx.left_click {
+            return (ItemMenuResult::Selected, Some(Point::new(mouse_pos.0, mouse_pos.1)));
+        }
+    } else {
+        ctx.set_bg(mouse_pos.0, mouse_pos.1, RGB::named(rltk::RED));
+        if ctx.left_click {
+            return (ItemMenuResult::Cancel, None);
+        }
+    }
+
+    (ItemMenuResult::NoResponse, None)
 }

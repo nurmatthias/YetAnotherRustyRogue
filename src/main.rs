@@ -27,7 +27,8 @@ mod spawner;
 
 
 #[derive(PartialEq, Copy, Clone)]
-pub enum RunState { AwaitingInput, PreRun, PlayerTurn, MonsterTurn, ShowInventory, ShowDropInventory }
+pub enum RunState { AwaitingInput, PreRun, PlayerTurn, MonsterTurn, ShowInventory, ShowDropInventory, 
+    ShowTargeting {range: i32, item: Entity} }
 
 pub struct State {
     pub ecs: World
@@ -106,9 +107,16 @@ impl GameState for State {
                     gui::ItemMenuResult::NoResponse => {}
                     gui::ItemMenuResult::Selected => {
                         let item_entity = result.1.unwrap();
-                        let mut intent = self.ecs.write_storage::<WantsToUse>();
-                        intent.insert(*self.ecs.fetch::<Entity>(), WantsToUse{ item: item_entity}).expect("Can not insert item to use");
-                        newrunstate = RunState::PlayerTurn;
+                        let is_ranged = self.ecs.read_storage::<Ranged>();
+                        let is_item_ranged = is_ranged.get(item_entity);
+
+                        if let Some(is_item_ranged) = is_item_ranged {
+                            newrunstate = RunState::ShowTargeting { range: is_item_ranged.range, item: item_entity }
+                        } else {
+                            let mut intent = self.ecs.write_storage::<WantsToUse>();
+                            intent.insert(*self.ecs.fetch::<Entity>(), WantsToUse{ item: item_entity, target: None}).expect("Can not insert item to drop");
+                            newrunstate = RunState::PlayerTurn;
+                        }
                     }
                 }
             }
@@ -121,6 +129,18 @@ impl GameState for State {
                         let item_entity = result.1.unwrap();
                         let mut intent = self.ecs.write_storage::<WantsToDrop>();
                         intent.insert(*self.ecs.fetch::<Entity>(), WantsToDrop{ item: item_entity}).expect("Can not insert item to drop");
+                        newrunstate = RunState::PlayerTurn;
+                    }
+                }
+            }
+            RunState::ShowTargeting {range, item} => {
+                let target = gui::ranged_target(&self.ecs, ctx, range);
+                match target.0 {
+                    gui::ItemMenuResult::Cancel => newrunstate = RunState::AwaitingInput,
+                    gui::ItemMenuResult::NoResponse => {}
+                    gui::ItemMenuResult::Selected => {
+                        let mut intent = self.ecs.write_storage::<WantsToUse>();
+                        intent.insert(*self.ecs.fetch::<Entity>(), WantsToUse { item, target: target.1 }).expect("Unable to use item");
                         newrunstate = RunState::PlayerTurn;
                     }
                 }
@@ -159,7 +179,12 @@ fn main() -> rltk::BError {
     gs.ecs.register::<WantsToMelee>();
     gs.ecs.register::<SufferDamage>();
     gs.ecs.register::<Item>();
-    gs.ecs.register::<Potion>();
+    gs.ecs.register::<Consumable>();
+    gs.ecs.register::<Ranged>();
+    gs.ecs.register::<ProvidesHealing>();
+    gs.ecs.register::<ProvidesDamage>();
+    gs.ecs.register::<AreaOfEffect>();
+    gs.ecs.register::<Confusion>();
     gs.ecs.register::<InBackpack>();
     gs.ecs.register::<WantsToPickup>();
     gs.ecs.register::<WantsToUse>();
@@ -178,9 +203,8 @@ fn main() -> rltk::BError {
     gs.ecs.insert(player_entity);
     gs.ecs.insert(Point::new(player_x, player_y));
 
-
-    // create test potion
-    spawner::health_potion(&mut gs.ecs, player_x+1, player_y+1);
+    // create test items
+    spawner::create_test_backpack(&mut gs.ecs);
 
     // create monsters for every room
     for room in map.rooms.iter().skip(1) {
