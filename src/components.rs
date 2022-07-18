@@ -13,6 +13,7 @@ pub struct Renderable {
     pub glyph: rltk::FontCharType,
     pub fg: RGB,
     pub bg: RGB,
+    pub render_order: i32
 }
 
 #[derive(Component, Debug)]
@@ -53,7 +54,6 @@ pub struct WantsToMelee {
 pub struct SufferDamage {
     pub amount : Vec<i32>
 }
-
 impl SufferDamage {
     pub fn new_damage(store: &mut WriteStorage<SufferDamage>, victim: Entity, amount: i32) {
         if let Some(suffering) = store.get_mut(victim) {
@@ -63,4 +63,34 @@ impl SufferDamage {
             store.insert(victim, dmg).expect("Unable to insert damage");
         }
     }
+}
+
+
+#[derive(Component, Debug)]
+pub struct Item {}
+
+#[derive(Component, Debug)]
+pub struct Potion {
+    pub heal_amount: i32
+}
+
+#[derive(Component, Debug)]
+pub struct InBackpack {
+    pub owner: Entity
+}
+
+#[derive(Component, Debug)]
+pub struct WantsToPickup {
+    pub collected_by: Entity,
+    pub item: Entity
+}
+
+#[derive(Component, Debug)]
+pub struct WantsToUse {
+    pub item: Entity
+}
+
+#[derive(Component, Debug)]
+pub struct WantsToDrop {
+    pub item: Entity
 }

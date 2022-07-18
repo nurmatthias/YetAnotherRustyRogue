@@ -1,7 +1,7 @@
 use rltk::{VirtualKeyCode, Rltk, Point};
 use specs::prelude::*;
 use std::cmp::{max, min};
-use super::{Position, Player, Viewshed, State, Map, RunState, CombatStats, WantsToMelee};
+use super::{Position, Player, Viewshed, State, Map, RunState, CombatStats, Item, WantsToMelee, WantsToPickup};
 
 pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut positions = ecs.write_storage::<Position>();
@@ -9,8 +9,10 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut viewsheds = ecs.write_storage::<Viewshed>();
     let entities = ecs.entities();
     let combat_stats = ecs.read_storage::<CombatStats>();
+    let items = ecs.read_storage::<Item>();
     let map = ecs.fetch::<Map>();
     let mut wants_to_melee = ecs.write_storage::<WantsToMelee>();
+    let mut wants_to_pickup = ecs.write_storage::<WantsToPickup>();
 
     for (entity, _player, pos, viewshed) in (&entities, &players, &mut positions, &mut viewsheds).join() {
         if pos.x + delta_x < 1 || pos.x + delta_x > map.width-1 || pos.y + delta_y < 1 || pos.y + delta_y > map.height-1 { return; }
@@ -21,6 +23,12 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
             if let Some(_target) = target {
                 wants_to_melee.insert(entity, WantsToMelee{ target: *potential_target }).expect("Add target failed");
                 return;
+            }
+
+            let item = items.get(*potential_target);
+            if let Some(_item) = item {
+                wants_to_pickup.insert(entity, WantsToPickup { collected_by: entity, item: *potential_target }).expect("Pickup failed");
+                break;
             }
         }
 
@@ -71,6 +79,10 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
 
             VirtualKeyCode::Numpad1 |
             VirtualKeyCode::B => try_move_player(-1, 1, &mut gs.ecs),
+
+            // Menu and stuff
+            VirtualKeyCode::I => return RunState::ShowInventory,
+            VirtualKeyCode::D => return RunState::ShowDropInventory,
 
             _ => { return RunState::AwaitingInput }
         },
