@@ -83,6 +83,7 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
             // Menu and stuff
             VirtualKeyCode::I => return RunState::ShowInventory,
             VirtualKeyCode::D => return RunState::ShowDropInventory,
+            VirtualKeyCode::Escape => return RunState::SaveGame,
 
             _ => { return RunState::AwaitingInput }
         },

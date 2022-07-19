@@ -1,5 +1,5 @@
 use rltk::{RGB, RandomNumberGenerator};
-use specs::prelude::*;
+use specs::{prelude::*, saveload::MarkedBuilder};
 
 use super::*;
 
@@ -24,6 +24,7 @@ pub fn player(ecs: &mut World, player_x: i32, player_y: i32) -> Entity {
         .with(Viewshed{ visible_tiles : Vec::new(), range: 8, dirty: true })
         .with(Name{name: "Player".to_string() })
         .with(CombatStats{ max_hp: 30, hp: 30, defense: 2, power: 5 })
+        .marked::<SimpleMarker<SerializeThis>>()
         .build()
 }
 
@@ -145,6 +146,7 @@ fn health_potion(ecs: &mut World, x: i32, y: i32) -> Entity {
         .with(Item{})
         .with(Consumable{})
         .with(ProvidesHealing { heal_amount: 8 })
+        .marked::<SimpleMarker<SerializeThis>>()
         .build()
 }
 
@@ -162,6 +164,7 @@ fn magic_missile_scroll(ecs: &mut World, x: i32, y: i32) -> Entity {
         .with(Consumable{})
         .with(ProvidesDamage { damage_amount: 8 })
         .with(Ranged{ range: 6})
+        .marked::<SimpleMarker<SerializeThis>>()
         .build()
 }
 
@@ -180,6 +183,7 @@ fn fireball_scroll(ecs: &mut World, x: i32, y: i32) -> Entity {
         .with(ProvidesDamage { damage_amount: 20 })
         .with(Ranged{ range: 6})
         .with(AreaOfEffect{ radius: 3 })
+        .marked::<SimpleMarker<SerializeThis>>()
         .build()
 }
 
@@ -197,6 +201,7 @@ fn confusion_scroll(ecs: &mut World, x: i32, y: i32) -> Entity {
         .with(Consumable{})
         .with(Ranged{ range: 6})
         .with(Confusion{ turns: 4 })
+        .marked::<SimpleMarker<SerializeThis>>()
         .build()
 }
 
@@ -223,5 +228,6 @@ fn monster<S : ToString>(ecs: &mut World, pos_x: i32, pos_y: i32, glyph: rltk::F
         .with(Name{ name: name.to_string() })
         .with(BlocksTile{})
         .with(CombatStats{ max_hp: 16, hp: 16, defense: 1, power: 4 })
+        .marked::<SimpleMarker<SerializeThis>>()
         .build();
 }
