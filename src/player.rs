@@ -1,7 +1,7 @@
 use rltk::{VirtualKeyCode, Rltk, Point};
 use specs::prelude::*;
 use std::cmp::{max, min};
-use super::{Position, Player, Viewshed, State, Map, RunState, CombatStats, Item, WantsToMelee, WantsToPickup, TileType};
+use super::{Position, Player, Viewshed, State, Map, RunState, CombatStats, Item, WantsToMelee, WantsToPickup, TileType, Monster};
 
 pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) -> Option<RunState> {
     let mut positions = ecs.write_storage::<Position>();
@@ -98,6 +98,9 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
             VirtualKeyCode::Numpad1 |
             VirtualKeyCode::B => next_runstate = try_move_player(-1, 1, &mut gs.ecs),
 
+            VirtualKeyCode::Numpad5 |
+            VirtualKeyCode::Space => next_runstate = skip_turn(&mut gs.ecs),
+
             // Menu and stuff
             VirtualKeyCode::I => next_runstate = Some(RunState::ShowInventory),
             VirtualKeyCode::D => next_runstate = Some(RunState::ShowDropInventory),
@@ -108,4 +111,35 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
     }
 
     next_runstate.unwrap_or(RunState::PlayerTurn)
+}
+
+
+fn skip_turn(ecs: &mut World) -> Option<RunState> {
+
+    let player_entity = ecs.fetch::<Entity>();
+    let viewshed_comp = ecs.read_storage::<Viewshed>();
+    let monsters = ecs.read_storage::<Monster>();
+
+    let map = ecs.fetch::<Map>();
+
+    let mut can_heal = true;
+    let viewshed = viewshed_comp.get(*player_entity).unwrap();
+    for tile in viewshed.visible_tiles.iter() {
+        let idx = map.xy_idx(tile.x, tile.y);
+        for entity_id in map.tile_content[idx].iter() {
+            let mob = monsters.get(*entity_id);
+            match mob {
+                None => {}
+                Some(_) => { can_heal = false; }
+            }
+        }
+    }
+
+    if can_heal {
+        let mut health_comp = ecs.write_storage::<CombatStats>();
+        let player_hp = health_comp.get_mut(*player_entity).unwrap();
+        player_hp.hp = i32::min(player_hp.hp + 1, player_hp.max_hp);
+    }
+
+    Some(RunState::PlayerTurn)
 }
