@@ -1,9 +1,9 @@
 use rltk::{VirtualKeyCode, Rltk, Point};
 use specs::prelude::*;
 use std::cmp::{max, min};
-use super::{Position, Player, Viewshed, State, Map, RunState, CombatStats, Item, WantsToMelee, WantsToPickup};
+use super::{Position, Player, Viewshed, State, Map, RunState, CombatStats, Item, WantsToMelee, WantsToPickup, TileType};
 
-pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
+pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) -> Option<RunState> {
     let mut positions = ecs.write_storage::<Position>();
     let players = ecs.read_storage::<Player>();
     let mut viewsheds = ecs.write_storage::<Viewshed>();
@@ -15,14 +15,16 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut wants_to_pickup = ecs.write_storage::<WantsToPickup>();
 
     for (entity, _player, pos, viewshed) in (&entities, &players, &mut positions, &mut viewsheds).join() {
-        if pos.x + delta_x < 1 || pos.x + delta_x > map.width-1 || pos.y + delta_y < 1 || pos.y + delta_y > map.height-1 { return; }
+        if pos.x + delta_x < 1 || pos.x + delta_x > map.width-1 || pos.y + delta_y < 1 || pos.y + delta_y > map.height-1 { 
+            break; 
+        }
         let destination_idx = map.xy_idx(pos.x + delta_x, pos.y + delta_y);
 
         for potential_target in map.tile_content[destination_idx].iter() {
             let target = combat_stats.get(*potential_target);
             if let Some(_target) = target {
                 wants_to_melee.insert(entity, WantsToMelee{ target: *potential_target }).expect("Add target failed");
-                return;
+                break;
             }
 
             let item = items.get(*potential_target);
@@ -41,11 +43,27 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
             ppos.x = pos.x;
             ppos.y = pos.y;
         }
+
+        if try_next_level(ecs) {
+            return Some(RunState::NextLevel);
+        }
     }
+
+    None
+}
+
+pub fn try_next_level(ecs: &World) -> bool {
+
+    let player_pos = ecs.fetch::<Point>();
+    let map = ecs.fetch::<Map>();
+    let player_idx = map.xy_idx(player_pos.x, player_pos.y);
+
+    map.tiles[player_idx] == TileType::DownStairs
 }
 
 pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
     // Player movement
+    let next_runstate: Option<RunState>;
     match ctx.key {
         None => { return RunState::AwaitingInput } // Nothing happened
         Some(key) => match key {
@@ -53,40 +71,41 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
             // Cardinal movement
             VirtualKeyCode::Left |
             VirtualKeyCode::Numpad4 |
-            VirtualKeyCode::H => try_move_player(-1, 0, &mut gs.ecs),
+            VirtualKeyCode::H => next_runstate = try_move_player(-1, 0, &mut gs.ecs),
 
             VirtualKeyCode::Right |
             VirtualKeyCode::Numpad6 |
-            VirtualKeyCode::L => try_move_player(1, 0, &mut gs.ecs),
+            VirtualKeyCode::L => next_runstate = try_move_player(1, 0, &mut gs.ecs),
 
             VirtualKeyCode::Up |
             VirtualKeyCode::Numpad8 |
-            VirtualKeyCode::K => try_move_player(0, -1, &mut gs.ecs),
+            VirtualKeyCode::K => next_runstate = try_move_player(0, -1, &mut gs.ecs),
 
             VirtualKeyCode::Down |
             VirtualKeyCode::Numpad2 |
-            VirtualKeyCode::J => try_move_player(0, 1, &mut gs.ecs),
+            VirtualKeyCode::J => next_runstate = try_move_player(0, 1, &mut gs.ecs),
 
             // Diagonal movement
             VirtualKeyCode::Numpad9 |
-            VirtualKeyCode::U => try_move_player(1, -1, &mut gs.ecs),
+            VirtualKeyCode::U => next_runstate = try_move_player(1, -1, &mut gs.ecs),
 
             VirtualKeyCode::Numpad7 |
-            VirtualKeyCode::Y => try_move_player(-1, -1, &mut gs.ecs),
+            VirtualKeyCode::Y => next_runstate = try_move_player(-1, -1, &mut gs.ecs),
 
             VirtualKeyCode::Numpad3 |
-            VirtualKeyCode::N => try_move_player(1, 1, &mut gs.ecs),
+            VirtualKeyCode::N => next_runstate = try_move_player(1, 1, &mut gs.ecs),
 
             VirtualKeyCode::Numpad1 |
-            VirtualKeyCode::B => try_move_player(-1, 1, &mut gs.ecs),
+            VirtualKeyCode::B => next_runstate = try_move_player(-1, 1, &mut gs.ecs),
 
             // Menu and stuff
-            VirtualKeyCode::I => return RunState::ShowInventory,
-            VirtualKeyCode::D => return RunState::ShowDropInventory,
-            VirtualKeyCode::Escape => return RunState::SaveGame,
+            VirtualKeyCode::I => next_runstate = Some(RunState::ShowInventory),
+            VirtualKeyCode::D => next_runstate = Some(RunState::ShowDropInventory),
+            VirtualKeyCode::Escape => next_runstate = Some(RunState::SaveGame),
 
-            _ => { return RunState::AwaitingInput }
+            _ => { next_runstate = Some(RunState::AwaitingInput) }
         },
     }
-    RunState::PlayerTurn
+
+    next_runstate.unwrap_or(RunState::PlayerTurn)
 }
