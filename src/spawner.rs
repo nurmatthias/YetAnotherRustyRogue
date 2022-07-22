@@ -77,7 +77,7 @@ fn room_table(map_depth: i32) -> RandomTable {
         .add("Goblin", 10)
         .add("Orc", 1 + map_depth)
         .add("Health Potion", 7)
-        .add("Fireball SWcroll", 2 + map_depth)
+        .add("Fireball Scroll", 2 + map_depth)
         .add("Confusion Scroll", 2 + map_depth)
         .add("Magic Missile Scroll", 4)
 }
