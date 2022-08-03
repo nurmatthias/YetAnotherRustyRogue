@@ -1,8 +1,8 @@
 use rltk::{ RGB, Rltk, RandomNumberGenerator, BaseMap, Algorithm2D, Point };
-use serde::{Serialize, Deserialize};
 use super::{Rect};
 use std::cmp::{max, min};
 use specs::prelude::*;
+use serde::{Serialize, Deserialize};
 
 pub const MAPWIDTH : usize = 80;
 pub const MAPHEIGHT : usize = 43;
@@ -16,19 +16,17 @@ pub enum TileType {
 #[derive(Default, Serialize, Deserialize, Clone)]
 pub struct Map {
     pub tiles : Vec<TileType>,
+    pub rooms : Vec<Rect>,
+    pub width : i32,
+    pub height : i32,
+    pub revealed_tiles : Vec<bool>,
+    pub visible_tiles : Vec<bool>,
+    pub blocked : Vec<bool>,
+    pub depth : i32,
 
     #[serde(skip_serializing)]
     #[serde(skip_deserializing)]
-    pub tile_content : Vec<Vec<Entity>>,
-
-    pub revealed_tiles : Vec<bool>,
-    pub visible_tiles : Vec<bool>,
-    pub blocked_tiles : Vec<bool>,
-    pub depth: i32,
-
-    pub rooms : Vec<Rect>,
-    pub width : i32,
-    pub height : i32
+    pub tile_content : Vec<Vec<Entity>>
 }
 
 impl Map {
@@ -66,12 +64,12 @@ impl Map {
     fn is_exit_valid(&self, x:i32, y:i32) -> bool {
         if x < 1 || x > self.width-1 || y < 1 || y > self.height-1 { return false; }
         let idx = self.xy_idx(x, y);
-        !self.blocked_tiles[idx]
+        !self.blocked[idx]
     }
 
     pub fn populate_blocked(&mut self) {
         for (i,tile) in self.tiles.iter_mut().enumerate() {
-            self.blocked_tiles[i] = *tile == TileType::Wall;
+            self.blocked[i] = *tile == TileType::Wall;
         }
     }
 
@@ -81,20 +79,19 @@ impl Map {
         }
     }
 
-    /// Build a simple random map
-    pub fn new_map_rooms_and_corridors(depth: i32) -> Map {
+    /// Makes a new map using the algorithm from http://rogueliketutorials.com/tutorials/tcod/part-3/
+    /// This gives a handful of random rooms and corridors joining them together.
+    pub fn new_map_rooms_and_corridors(new_depth : i32) -> Map {
         let mut map = Map{
             tiles : vec![TileType::Wall; MAPCOUNT],
-            tile_content : vec![Vec::new(); MAPCOUNT],
-            
-            revealed_tiles : vec![false; MAPCOUNT],
-            visible_tiles : vec![false; MAPCOUNT],
-            blocked_tiles : vec![false; MAPCOUNT],
-            depth: depth,
-
             rooms : Vec::new(),
             width : MAPWIDTH as i32,
-            height: MAPHEIGHT as i32
+            height: MAPHEIGHT as i32,
+            revealed_tiles : vec![false; MAPCOUNT],
+            visible_tiles : vec![false; MAPCOUNT],
+            blocked : vec![false; MAPCOUNT],
+            tile_content : vec![Vec::new(); MAPCOUNT],
+            depth: new_depth
         };
 
         const MAX_ROOMS : i32 = 30;
@@ -132,7 +129,7 @@ impl Map {
             }
         }
 
-        let stairs_position = map.rooms[map.rooms.len() - 1].center();
+        let stairs_position = map.rooms[map.rooms.len()-1].center();
         let stairs_idx = map.xy_idx(stairs_position.0, stairs_position.1);
         map.tiles[stairs_idx] = TileType::DownStairs;
 
@@ -144,6 +141,7 @@ impl BaseMap for Map {
     fn is_opaque(&self, idx:usize) -> bool {
         self.tiles[idx] == TileType::Wall
     }
+
 
     fn get_pathing_distance(&self, idx1:usize, idx2:usize) -> f32 {
         let w = self.width as usize;

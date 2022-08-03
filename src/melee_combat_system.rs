@@ -25,7 +25,7 @@ impl<'a> System<'a> for MeleeCombatSystem {
                     let damage = i32::max(0, stats.power - target_stats.defense);
 
                     if damage == 0 {
-                        log.entries.push(format!("{} can't hurt {}", &name.name, &target_name.name));
+                        log.entries.push(format!("{} is unable to hurt {}", &name.name, &target_name.name));
                     } else {
                         log.entries.push(format!("{} hits {}, for {} hp.", &name.name, &target_name.name, damage));
                         SufferDamage::new_damage(&mut inflict_damage, wants_melee.target, damage);
