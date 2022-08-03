@@ -1,7 +1,7 @@
 use specs::prelude::*;
 use specs::saveload::{SimpleMarker, SimpleMarkerAllocator, SerializeComponents, DeserializeComponents, MarkedBuilder};
 use specs::error::NoError;
-use super::components::*;
+use crate::components::*;
 use std::fs::File;
 use std::path::Path;
 use std::fs;
@@ -27,7 +27,7 @@ pub fn save_game(_ecs : &mut World) {
 #[cfg(not(target_arch = "wasm32"))]
 pub fn save_game(ecs : &mut World) {
     // Create helper
-    let mapcopy = ecs.get_mut::<super::map::Map>().unwrap().clone();
+    let mapcopy = ecs.get_mut::<crate::map::Map>().unwrap().clone();
     let savehelper = ecs
         .create_entity()
         .with(SerializationHelper{ map : mapcopy })
@@ -102,9 +102,9 @@ pub fn load_game(ecs: &mut World) {
         let player = ecs.read_storage::<Player>();
         let position = ecs.read_storage::<Position>();
         for (e,h) in (&entities, &helper).join() {
-            let mut worldmap = ecs.write_resource::<super::map::Map>();
+            let mut worldmap = ecs.write_resource::<crate::map::Map>();
             *worldmap = h.map.clone();
-            worldmap.tile_content = vec![Vec::new(); super::map::MAPCOUNT];
+            worldmap.tile_content = vec![Vec::new(); crate::map::MAPCOUNT];
             deleteme = Some(e);
         }
         for (e,_p,pos) in (&entities, &player, &position).join() {

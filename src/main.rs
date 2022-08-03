@@ -1,4 +1,3 @@
-extern crate serde;
 use rltk::{GameState, Rltk, Point};
 use specs::prelude::*;
 use specs::saveload::{SimpleMarker, SimpleMarkerAllocator};
@@ -11,24 +10,10 @@ mod player;
 use player::*;
 mod rect;
 pub use rect::Rect;
-mod visibility_system;
-use visibility_system::VisibilitySystem;
-mod monster_ai_system;
-use monster_ai_system::MonsterAI;
-mod map_indexing_system;
-use map_indexing_system::MapIndexingSystem;
-mod melee_combat_system;
-use melee_combat_system::MeleeCombatSystem;
-mod damage_system;
-use damage_system::DamageSystem;
+mod systems;
+pub use systems::*;
 mod gui;
 mod gamelog;
-mod spawner;
-mod inventory_system;
-use inventory_system::{ ItemCollectionSystem, ItemUseSystem, ItemDropSystem };
-pub mod saveload_system;
-pub mod random_table;
-
 
 
 #[derive(PartialEq, Copy, Clone)]
@@ -52,18 +37,25 @@ impl State {
     fn run_systems(&mut self) {
         let mut vis = VisibilitySystem{};
         vis.run_now(&self.ecs);
+
         let mut mob = MonsterAI{};
         mob.run_now(&self.ecs);
+
         let mut mapindex = MapIndexingSystem{};
         mapindex.run_now(&self.ecs);
+
         let mut melee = MeleeCombatSystem{};
         melee.run_now(&self.ecs);
+
         let mut damage = DamageSystem{};
         damage.run_now(&self.ecs);
+
         let mut pickup = ItemCollectionSystem{};
         pickup.run_now(&self.ecs);
+
         let mut itemuse = ItemUseSystem{};
         itemuse.run_now(&self.ecs);
+        
         let mut drop_items = ItemDropSystem{};
         drop_items.run_now(&self.ecs);
 
@@ -289,7 +281,7 @@ impl State {
 fn main() -> rltk::BError {
     use rltk::RltkBuilder;
     let mut context = RltkBuilder::simple80x50()
-        .with_title("Roguelike Tutorial")
+        .with_title("YARR")
         .build()?;
     context.with_post_scanlines(true);
     let mut gs = State {
