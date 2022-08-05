@@ -1,14 +1,18 @@
-use specs::prelude::*;
-use specs::saveload::{SimpleMarker, SimpleMarkerAllocator, SerializeComponents, DeserializeComponents, MarkedBuilder};
-use specs::error::NoError;
 use crate::components::*;
+#[allow(deprecated)]
+use specs::error::NoError;
+use specs::prelude::*;
+use specs::saveload::{
+    DeserializeComponents, MarkedBuilder, SerializeComponents, SimpleMarker, SimpleMarkerAllocator,
+};
+use std::fs;
 use std::fs::File;
 use std::path::Path;
-use std::fs;
 
 macro_rules! serialize_individually {
     ($ecs:expr, $ser:expr, $data:expr, $( $type:ty),*) => {
         $(
+            #[allow(deprecated)]
         SerializeComponents::<NoError, SimpleMarker<SerializeMe>>::serialize(
             &( $ecs.read_storage::<$type>(), ),
             &$data.0,
@@ -21,29 +25,53 @@ macro_rules! serialize_individually {
 }
 
 #[cfg(target_arch = "wasm32")]
-pub fn save_game(_ecs : &mut World) {
-}
+pub fn save_game(_ecs: &mut World) {}
 
 #[cfg(not(target_arch = "wasm32"))]
-pub fn save_game(ecs : &mut World) {
+pub fn save_game(ecs: &mut World) {
     // Create helper
     let mapcopy = ecs.get_mut::<crate::map::Map>().unwrap().clone();
     let savehelper = ecs
         .create_entity()
-        .with(SerializationHelper{ map : mapcopy })
+        .with(SerializationHelper { map: mapcopy })
         .marked::<SimpleMarker<SerializeMe>>()
         .build();
 
     // Actually serialize
     {
-        let data = ( ecs.entities(), ecs.read_storage::<SimpleMarker<SerializeMe>>() );
+        let data = (
+            ecs.entities(),
+            ecs.read_storage::<SimpleMarker<SerializeMe>>(),
+        );
 
         let writer = File::create("./savegame.json").unwrap();
         let mut serializer = serde_json::Serializer::new(writer);
-        serialize_individually!(ecs, serializer, data, Position, Renderable, Player, Viewshed, Monster,
-            Name, BlocksTile, CombatStats, SufferDamage, WantsToMelee, Item, Consumable, Ranged, InflictsDamage,
-            AreaOfEffect, Confusion, ProvidesHealing, InBackpack, WantsToPickupItem, WantsToUseItem,
-            WantsToDropItem, SerializationHelper
+        serialize_individually!(
+            ecs,
+            serializer,
+            data,
+            Position,
+            Renderable,
+            Player,
+            Viewshed,
+            Monster,
+            Name,
+            BlocksTile,
+            CombatStats,
+            SufferDamage,
+            WantsToMelee,
+            Item,
+            Consumable,
+            Ranged,
+            InflictsDamage,
+            AreaOfEffect,
+            Confusion,
+            ProvidesHealing,
+            InBackpack,
+            WantsToPickupItem,
+            WantsToUseItem,
+            WantsToDropItem,
+            SerializationHelper
         );
     }
 
@@ -58,6 +86,7 @@ pub fn does_save_exist() -> bool {
 macro_rules! deserialize_individually {
     ($ecs:expr, $de:expr, $data:expr, $( $type:ty),*) => {
         $(
+            #[allow(deprecated)]
         DeserializeComponents::<NoError, _>::deserialize(
             &mut ( &mut $ecs.write_storage::<$type>(), ),
             &$data.0, // entities
@@ -86,37 +115,66 @@ pub fn load_game(ecs: &mut World) {
     let mut de = serde_json::Deserializer::from_str(&data);
 
     {
-        let mut d = (&mut ecs.entities(), &mut ecs.write_storage::<SimpleMarker<SerializeMe>>(), &mut ecs.write_resource::<SimpleMarkerAllocator<SerializeMe>>());
+        let mut d = (
+            &mut ecs.entities(),
+            &mut ecs.write_storage::<SimpleMarker<SerializeMe>>(),
+            &mut ecs.write_resource::<SimpleMarkerAllocator<SerializeMe>>(),
+        );
 
-        deserialize_individually!(ecs, de, d, Position, Renderable, Player, Viewshed, Monster,
-            Name, BlocksTile, CombatStats, SufferDamage, WantsToMelee, Item, Consumable, Ranged, InflictsDamage,
-            AreaOfEffect, Confusion, ProvidesHealing, InBackpack, WantsToPickupItem, WantsToUseItem,
-            WantsToDropItem, SerializationHelper
+        deserialize_individually!(
+            ecs,
+            de,
+            d,
+            Position,
+            Renderable,
+            Player,
+            Viewshed,
+            Monster,
+            Name,
+            BlocksTile,
+            CombatStats,
+            SufferDamage,
+            WantsToMelee,
+            Item,
+            Consumable,
+            Ranged,
+            InflictsDamage,
+            AreaOfEffect,
+            Confusion,
+            ProvidesHealing,
+            InBackpack,
+            WantsToPickupItem,
+            WantsToUseItem,
+            WantsToDropItem,
+            SerializationHelper
         );
     }
 
-    let mut deleteme : Option<Entity> = None;
+    let mut deleteme: Option<Entity> = None;
     {
         let entities = ecs.entities();
         let helper = ecs.read_storage::<SerializationHelper>();
         let player = ecs.read_storage::<Player>();
         let position = ecs.read_storage::<Position>();
-        for (e,h) in (&entities, &helper).join() {
+        for (e, h) in (&entities, &helper).join() {
             let mut worldmap = ecs.write_resource::<crate::map::Map>();
             *worldmap = h.map.clone();
             worldmap.tile_content = vec![Vec::new(); crate::map::MAPCOUNT];
             deleteme = Some(e);
         }
-        for (e,_p,pos) in (&entities, &player, &position).join() {
+        for (e, _p, pos) in (&entities, &player, &position).join() {
             let mut ppos = ecs.write_resource::<rltk::Point>();
             *ppos = rltk::Point::new(pos.x, pos.y);
             let mut player_resource = ecs.write_resource::<Entity>();
             *player_resource = e;
         }
     }
-    ecs.delete_entity(deleteme.unwrap()).expect("Unable to delete helper");
+    ecs.delete_entity(deleteme.unwrap())
+        .expect("Unable to delete helper");
 }
 
 pub fn delete_save() {
-    if Path::new("./savegame.json").exists() { std::fs::remove_file("./savegame.json").expect("Unable to delete file"); }
+    if Path::new("./savegame.json").exists() {
+        std::fs::remove_file("./savegame.json").expect("Unable to delete file");
+    }
 }
