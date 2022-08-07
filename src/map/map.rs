@@ -158,7 +158,6 @@ impl BaseMap for Map {
         let y = idx as i32 / self.width;
         let w = self.width as usize;
 
-        // Cardinal directions
         if self.is_exit_valid(x - 1, y) {
             exits.push((idx - 1, 1.0))
         };

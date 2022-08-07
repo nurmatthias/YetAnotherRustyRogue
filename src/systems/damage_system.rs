@@ -1,5 +1,18 @@
-use crate::{gamelog::GameLog, CombatStats, Name, Player, SufferDamage};
+use crate::{ui::gamelog::GameLog, CombatStats, Name, Player, RunState, SufferDamage};
 use specs::prelude::*;
+
+impl SufferDamage {
+    pub fn new_damage(store: &mut WriteStorage<SufferDamage>, victim: Entity, amount: i32) {
+        if let Some(suffering) = store.get_mut(victim) {
+            suffering.amount.push(amount);
+        } else {
+            let dmg = SufferDamage {
+                amount: vec![amount],
+            };
+            store.insert(victim, dmg).expect("Unable to insert damage");
+        }
+    }
+}
 
 pub struct DamageSystem {}
 
@@ -40,7 +53,10 @@ pub fn delete_the_dead(ecs: &mut World) {
                         }
                         dead.push(entity)
                     }
-                    Some(_) => rltk::console::log("You are dead"),
+                    Some(_) => {
+                        let mut runstate = ecs.write_resource::<RunState>();
+                        *runstate = RunState::GameOver;
+                    }
                 }
             }
         }

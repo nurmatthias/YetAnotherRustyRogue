@@ -1,6 +1,8 @@
+use crate::ui::gamelog::GameLog;
+
 use super::{
-    gamelog::GameLog, CombatStats, Item, Map, Monster, Player, Position, RunState, State, TileType,
-    Viewshed, WantsToMelee, WantsToPickupItem,
+    CombatStats, Item, Map, Monster, Player, Position, RunState, State, TileType, Viewshed,
+    WantsToMelee, WantsToPickupItem,
 };
 use rltk::{Point, Rltk, VirtualKeyCode};
 use specs::prelude::*;
@@ -179,6 +181,7 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
             VirtualKeyCode::G => get_item(&mut gs.ecs),
             VirtualKeyCode::I => return RunState::ShowInventory,
             VirtualKeyCode::D => return RunState::ShowDropItem,
+            VirtualKeyCode::R => return RunState::ShowRemoveItem,
 
             // Save and Quit
             VirtualKeyCode::Escape => return RunState::SaveGame,

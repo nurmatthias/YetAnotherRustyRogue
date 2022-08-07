@@ -1,4 +1,5 @@
 use crate::components::*;
+use crate::events::*;
 #[allow(deprecated)]
 use specs::error::NoError;
 use specs::prelude::*;
@@ -30,6 +31,7 @@ pub fn save_game(_ecs: &mut World) {}
 #[cfg(not(target_arch = "wasm32"))]
 pub fn save_game(ecs: &mut World) {
     // Create helper
+
     let mapcopy = ecs.get_mut::<crate::map::Map>().unwrap().clone();
     let savehelper = ecs
         .create_entity()
@@ -71,6 +73,11 @@ pub fn save_game(ecs: &mut World) {
             WantsToPickupItem,
             WantsToUseItem,
             WantsToDropItem,
+            WantsToRemoveItem,
+            Equippable,
+            Equipped,
+            MeleePowerBonus,
+            DefensePowerBonus,
             SerializationHelper
         );
     }
@@ -146,6 +153,11 @@ pub fn load_game(ecs: &mut World) {
             WantsToPickupItem,
             WantsToUseItem,
             WantsToDropItem,
+            WantsToRemoveItem,
+            Equippable,
+            Equipped,
+            MeleePowerBonus,
+            DefensePowerBonus,
             SerializationHelper
         );
     }

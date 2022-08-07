@@ -50,26 +50,8 @@ pub struct CombatStats {
 }
 
 #[derive(Component, Debug, ConvertSaveload, Clone)]
-pub struct WantsToMelee {
-    pub target: Entity,
-}
-
-#[derive(Component, Debug, ConvertSaveload, Clone)]
 pub struct SufferDamage {
     pub amount: Vec<i32>,
-}
-
-impl SufferDamage {
-    pub fn new_damage(store: &mut WriteStorage<SufferDamage>, victim: Entity, amount: i32) {
-        if let Some(suffering) = store.get_mut(victim) {
-            suffering.amount.push(amount);
-        } else {
-            let dmg = SufferDamage {
-                amount: vec![amount],
-            };
-            store.insert(victim, dmg).expect("Unable to insert damage");
-        }
-    }
 }
 
 #[derive(Component, Debug, Serialize, Deserialize, Clone)]
@@ -108,29 +90,35 @@ pub struct InBackpack {
     pub owner: Entity,
 }
 
-#[derive(Component, Debug, ConvertSaveload, Clone)]
-pub struct WantsToPickupItem {
-    pub collected_by: Entity,
-    pub item: Entity,
+#[derive(PartialEq, Clone, Copy, Serialize, Deserialize)]
+pub enum EquipmentSlot {
+    Melee,
+    Shield,
 }
 
-#[derive(Component, Debug, ConvertSaveload, Clone)]
-pub struct WantsToUseItem {
-    pub item: Entity,
-    pub target: Option<rltk::Point>,
+#[derive(Component, Serialize, Deserialize, Clone)]
+pub struct Equippable {
+    pub slot: EquipmentSlot,
 }
 
-#[derive(Component, Debug, ConvertSaveload, Clone)]
-pub struct WantsToDropItem {
-    pub item: Entity,
+#[derive(Component, ConvertSaveload, Clone)]
+pub struct Equipped {
+    pub owner: Entity,
+    pub slot: EquipmentSlot,
 }
 
-// Serialization helper code. We need to implement ConvertSaveLoad for each type that contains an
-// Entity.
+#[derive(Component, ConvertSaveload, Clone)]
+pub struct MeleePowerBonus {
+    pub power: i32,
+}
+
+#[derive(Component, ConvertSaveload, Clone)]
+pub struct DefensePowerBonus {
+    pub defense: i32,
+}
 
 pub struct SerializeMe;
 
-// Special component that exists to help serialize the game data
 #[derive(Component, Serialize, Deserialize, Clone)]
 pub struct SerializationHelper {
     pub map: super::map::Map,
