@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use rltk::{GameState, Point, Rltk};
 use specs::prelude::*;
 use specs::saveload::{SimpleMarker, SimpleMarkerAllocator};
@@ -411,6 +413,7 @@ fn main() -> rltk::BError {
     use rltk::RltkBuilder;
     let mut context = RltkBuilder::simple80x50()
         .with_title("World of YARR")
+        .with_fps_cap(30.)
         .build()?;
 
     context.with_post_scanlines(true);

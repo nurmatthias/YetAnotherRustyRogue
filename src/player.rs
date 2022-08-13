@@ -160,7 +160,7 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
             // Diagonals
             VirtualKeyCode::Numpad9 | VirtualKeyCode::U => try_move_player(1, -1, &mut gs.ecs),
 
-            VirtualKeyCode::Numpad7 | VirtualKeyCode::Y => try_move_player(-1, -1, &mut gs.ecs),
+            VirtualKeyCode::Numpad7 | VirtualKeyCode::Z => try_move_player(-1, -1, &mut gs.ecs),
 
             VirtualKeyCode::Numpad3 | VirtualKeyCode::N => try_move_player(1, 1, &mut gs.ecs),
 
@@ -171,7 +171,7 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
             VirtualKeyCode::Space => return skip_turn(&mut gs.ecs),
 
             // Level changes
-            VirtualKeyCode::Period => {
+            VirtualKeyCode::Y => {
                 if try_next_level(&mut gs.ecs) {
                     return RunState::NextLevel;
                 }

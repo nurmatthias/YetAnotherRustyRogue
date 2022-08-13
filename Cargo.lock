@@ -2012,6 +2012,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "world_of_yarr"
+version = "0.1.0"
+dependencies = [
+ "rltk",
+ "serde",
+ "serde_json",
+ "specs",
+ "specs-derive",
+]
+
+[[package]]
 name = "ws2_32-sys"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2055,14 +2066,3 @@ name = "xml-rs"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2d7d3948613f75c98fd9328cfdcc45acc4d360655289d0a7d4ec931392200a3"
-
-[[package]]
-name = "yet_another_rusty_rogue"
-version = "0.1.0"
-dependencies = [
- "rltk",
- "serde",
- "serde_json",
- "specs",
- "specs-derive",
-]
