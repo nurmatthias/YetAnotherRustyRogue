@@ -71,6 +71,9 @@ impl State {
         let mut remove_items = ItemRemoveSystem {};
         remove_items.run_now(&self.ecs);
 
+        let mut particles = particle_system::ParticleSpawnSystem {};
+        particles.run_now(&self.ecs);
+
         self.ecs.maintain();
     }
 }
@@ -265,6 +268,7 @@ impl GameState for State {
         }
 
         damage_system::delete_the_dead(&mut self.ecs);
+        particle_system::cull_dead_particles(&mut self.ecs, ctx);
     }
 }
 
@@ -448,6 +452,7 @@ fn main() -> rltk::BError {
     gs.ecs.register::<DefensePowerBonus>();
     gs.ecs.register::<SimpleMarker<SerializeMe>>();
     gs.ecs.register::<SerializationHelper>();
+    gs.ecs.register::<ParticleLifetime>();
 
     gs.ecs.insert(SimpleMarkerAllocator::<SerializeMe>::new());
 
@@ -470,6 +475,7 @@ fn main() -> rltk::BError {
     gs.ecs.insert(gamelog::GameLog {
         entries: vec!["Welcome to World of YARR".to_string()],
     });
+    gs.ecs.insert(particle_system::ParticleBuilder::new());
 
     rltk::main_loop(context, gs)
 }
